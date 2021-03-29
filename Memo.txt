@@ -1,0 +1,5 @@
+커스텀 뷰는 인자로 context와 AttributeSet을 받아와야 한다.
+상속받을 때는 Appcompat으로 받아야 함.
+
+Appcompat 은 매년 새로운 버전의 안드로이드가 출시가 된다.
+이 때 이전 버전과 호환을 하기위해 사용
