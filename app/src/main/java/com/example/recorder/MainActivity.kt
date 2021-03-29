@@ -2,6 +2,7 @@ package com.example.recorder
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.media.MediaPlayer
 import android.media.MediaRecorder
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -9,12 +10,20 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
+
     private var state = State.BEFORE_RECODING
+        set(value) {
+            field = value
+            resetBtn.isEnabled = (value == State.AFTER_RECORDING || value == State.ON_PLAYING)
+            recordBtn.updateIconWithState(value)
+        }
 
     private val requiredPermission = arrayOf(Manifest.permission.RECORD_AUDIO)
     private var recorder: MediaRecorder? = null
+    private var player: MediaPlayer? = null
 
-    private val recordingFilePath : String by lazy {
+
+    private val recordingFilePath: String by lazy {
         "${externalCacheDir?.absolutePath}/recording.3gp"
     }
 
@@ -25,6 +34,8 @@ class MainActivity : AppCompatActivity() {
 
         requestAudioPermission()
         initViews()
+        bindViews()
+        initVariable()
 
 
     }
@@ -54,9 +65,50 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    fun initViews() {
+    private fun initViews() {
         recordBtn.updateIconWithState(state)
     }
+
+    private fun bindViews() {
+
+        soundVisualizerView.onRequestCurrentAmplitude = {
+            recorder?.maxAmplitude ?: 0
+        }
+
+        resetBtn.setOnClickListener {
+
+            stopPlaying()
+            soundVisualizerView.clearVisualization()
+            recordTimetextView.clearCount()
+            state = State.BEFORE_RECODING
+
+        }
+
+        recordBtn.setOnClickListener {
+
+            when (state) {
+
+                State.BEFORE_RECODING -> {
+                    startRecording()
+                }
+                State.ON_RECODRING -> {
+                    stopRecording()
+                }
+                State.AFTER_RECORDING -> {
+                    startPlaying()
+                }
+                State.ON_PLAYING -> {
+                    stopPlaying()
+                }
+            }
+
+        }
+    }
+
+    private fun initVariable() {
+        state = State.BEFORE_RECODING
+    }
+
 
     private fun startRecording() {
         recorder = MediaRecorder().apply {
@@ -68,14 +120,44 @@ class MainActivity : AppCompatActivity() {
             prepare()
         }
         recorder?.start()
+        soundVisualizerView.startVisualizing(false)
+        recordTimetextView.startCountUp()
+        state = State.ON_RECODRING
     }
 
-    fun stopRecording(){
+    private fun stopRecording() {
         recorder?.run {
             stop()
             release()
         }
         recorder = null
+        soundVisualizerView.stopVisualizing()
+        recordTimetextView.stopCount()
+        state = State.AFTER_RECORDING
+    }
+
+    private fun startPlaying() {
+        player = MediaPlayer().apply {
+            setDataSource(recordingFilePath)
+            prepare()
+        }
+        player?.setOnCompletionListener {
+            stopPlaying()
+            state = State.AFTER_RECORDING
+        }
+        player?.start()
+        soundVisualizerView.startVisualizing(true)
+        recordTimetextView.startCountUp()
+        state = State.ON_PLAYING
+
+    }
+
+    private fun stopPlaying() {
+        player?.release()
+        player = null
+        soundVisualizerView.stopVisualizing()
+        recordTimetextView.stopCount()
+        state = State.AFTER_RECORDING
     }
 
     companion object {

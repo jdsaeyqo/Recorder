@@ -7,6 +7,12 @@ import androidx.appcompat.widget.AppCompatImageButton
 
 class RecordButton(context: Context, attrs: AttributeSet) : AppCompatImageButton(context, attrs) {
 
+    init {
+
+        setBackgroundResource(R.drawable.shape_oval_btn)
+    }
+
+
     fun updateIconWithState(state: State) {
         when (state) {
 
